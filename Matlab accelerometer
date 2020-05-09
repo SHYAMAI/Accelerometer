@@ -1,0 +1,100 @@
+MATLAB CODE:
+clc
+clear all
+close all
+% state space model of flight autopilot system
+A=[0 1 0 0;0 -0.1818 2.6767 0;0 0 0 1;0 -0.4545 31.1818 0];
+B=[0; 0; 20; 0; 0];
+C=[1 0 0 0 0;
+   0 57 0 0 0;
+   -16.2 -0.98 0.042 0 0;
+   0 0 0 0 1];% transmission matrix
+system_ss=ss(A,B,C,D,1)   % state space
+% Observability matrix
+observability=obsv(A,C)
+% Observability checking
+if rank(A)<=rank(observability)
+ disp('The system is completely observable')
+else
+ disp('Not observable')
+end
+% Controllability matrix
+controllability=ctrb(A,B)
+% Controllability checking
+if rank(A)<=rank(controllability)
+ disp('The system is completely controllable')
+else
+ disp('Not controllable')
+end
+
+%Transfer function
+[num,den]=ss2tf(A,B,C,D,1) % State space model to transfer function
+%Polynomial form
+mod=idpoly(den,[0 num],[],[],[]) %ARX model
+%Input signal
+uk=idinput(1000,'prbs',[0 1],[0 1]); %PRBS signal generation
+plot(uk)
+N=size(uk);
+%Obtaing the output data
+yk=sim(mod,uk);
+%Estimating the model parameters by using least square method
+n=size(A)
+
+phiy=[];
+phiu=[];
+i=0;
+for k=n:-1:2
+i=i+1;
+phiy=[phiy -yk(k-1:N-i)];
+end
+j=0;
+nb=n-i;
+for k=1:nb
+ j=j+1;
+phiu=[phiu uk(n-k:N-j)];
+end
+phi=[phiy phiu];
+y=yk(n:N);
+theta=inv(phi'*phi)*phi'*y %Estimated parameter
+
+
+
+
+OUTPUT:
+
+a =0 1 0 0 ;0 -0.1818 2.6767 0;0 0 0 1;0 -0.4545 31.1818 0
+ 
+observability =
+
+         0    1.0000         0         0         0
+    0.0012    0.6613         0    0.0011   -0.0007
+   -0.0009   -0.5400    0.0011   -0.0008   -0.0006
+   -0.0004    0.4419   -0.0008   -0.0005    0.0003
+
+The system is completely observable
+
+controllability =
+   -0.0033    0.0027   -0.0019    0.0016   
+         0   -0.0033    0.0027   -0.0019    
+    0.0080   -0.0017   -0.0146    0.0050    
+         0    0.1939   -0.0027   -0.2136    
+The system is completely controllable
+
+num =
+
+         0   -0.0033   -0.0004   -0.0033   0.0000
+
+en =0.9230    1.1509    0.9318    0.0530   -0.0002
+
+
+mod =
+Discrete-time ARX model:  A(z)y(t) = B(z)u(t) + e(t)                                    
+  A(z) = 1 + 0.923 z^-1 + 1.151 z^-2 + 0.9318 z^-3 + 0.05302 z^-4 - 0.000204 z^-5       
+                                                                                        
+  B(z) = -0.0033 z^-2 - 0.0003927 z^-3 - 0.003293 z^-4 - 0.0002062 z^-5 + 1.367e-20 z^-6
+                                                                                        
+  
+
+theta =
+
+   1.0e+19*
